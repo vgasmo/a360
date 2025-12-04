@@ -118,7 +118,7 @@ st.markdown(
         background: #020617;
         color: #e5e7eb;
     }
-    section[data-testid="stSidebar"] .css-1d391kg, 
+    section[data-testid="stSidebar"] .css-1d391kg,
     section[data-testid="stSidebar"] .css-1lcbmhc {
         color: #e5e7eb;
     }
@@ -172,7 +172,7 @@ USERS = [
     # Administrativo
     ("Ana Coelho", "ana.coelho@startupleiria.com", "1234", "RESPONSAVEL", "Administrativo"),
     ("Paula Sequeira", "paula.sequeira@startupleiria.com", "1234", "MEMBRO", "Administrativo"),
-    ("Bruno Ramalho", "bruno.ramalho@startupleiria.com", "1234", "RESPONSAVEL", "Projetos"),  # primário: Projetos
+    ("Bruno Ramalho", "bruno.ramalho@startupleiria.com", "1234", "RESPONSAVEL", "Projetos"),
     ("Rita Ferreira", "rita.ferreira@startupleiria.com", "1234", "MEMBRO", "Administrativo"),
     ("Bernardo Vieira", "info@startupleiria.com", "1234", "ESTAGIARIO", "Administrativo"),
     # Projetos
@@ -338,7 +338,7 @@ def evaluation_form(user: dict):
             st.markdown('</div>', unsafe_allow_html=True)
             return
 
-        option_labels = [f\"{c['name']} ({c['team']})\" for c in colleagues]
+        option_labels = [f"{c['name']} ({c['team']})" for c in colleagues]
         selected = st.selectbox("Pessoa a avaliar", option_labels)
         name_clean = selected.split(" (")[0]
         evaluatee = next(c for c in colleagues if c["name"] == name_clean)
@@ -384,6 +384,7 @@ def evaluation_form(user: dict):
             st.markdown("---")
 
         # TÉCNICAS — só mesma equipa
+        evaluatee_team = evaluatee.get("team")
         if same_team and evaluatee_team in TECHNICAL_COMPETENCIES:
             st.markdown("### Competências técnicas da equipa")
             for comp in TECHNICAL_COMPETENCIES[evaluatee_team]:
@@ -468,7 +469,10 @@ def my_results(user: dict):
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Bloco 2 – só feedback dos outros (sem auto)
-    df_others = df[df["evaluation_type"] != "SELF"] if "evaluation_type" in df.columns else df.iloc[0:0]
+    if "evaluation_type" in df.columns:
+        df_others = df[df["evaluation_type"] != "SELF"]
+    else:
+        df_others = pd.DataFrame([])
 
     if not df_others.empty:
         grouped_others = df_others.groupby("category")["score"].mean().reset_index()
@@ -538,7 +542,7 @@ def ceo_dashboard():
     st.bar_chart(avg_by_team, x="evaluatee_team", y="score")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Se quiser ver só feedback dos outros (sem self)
+    # Sem autoavaliação
     if "evaluation_type" in df.columns:
         df_no_self = df[df["evaluation_type"] != "SELF"]
         if not df_no_self.empty:
@@ -613,3 +617,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
