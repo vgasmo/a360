@@ -165,7 +165,7 @@ supabase = init_connection()
 USERS = [
     ("Vítor Ferreira", "vitor.ferreira@startupleiria.com", "1234", "CEO", "Consultoria & Ecossistema"),
     # Marketing
-    ("Francisco Aguiar", "francisco.aguiar@startupleiria.com", "1234", "RESPONSAVEL", "Marketing", "Consultoria & Ecossistema")),
+    ("Francisco Aguiar", "francisco.aguiar@startupleiria.com", "1234", "RESPONSAVEL", "Marketing", "Consultoria & Ecossistema"),
     ("Natacha Amorim", "natacha.amorim@startupleiria.com", "1234", "MEMBRO", "Marketing"),
     ("Mariana Reis", "mariana.reis@startupleiria.com", "1234", "MEMBRO", "Marketing"),
     ("Nicole Santos", "hello@startupleiria.com", "1234", "ESTAGIARIO", "Marketing"),
@@ -177,13 +177,17 @@ USERS = [
     ("Bernardo Vieira", "info@startupleiria.com", "1234", "ESTAGIARIO", "Administrativo"),
     # Projetos
     ("Luís Fonseca", "luis.fonseca@startupleiria.com", "1234", "MEMBRO", "Projetos", "Consultoria & Ecossistema"),
-    ("Margarida Sousa", "margarida.sousa@startupleiria.com", "1234", "MEMBRO", "Projetos",, "Consultoria & Ecossistema"),
+    ("Margarida Sousa", "margarida.sousa@startupleiria.com", "1234", "MEMBRO", "Projetos", "Consultoria & Ecossistema"),
     ("Luís Pacheco", "suporte@startupleiria.com", "1234", "ESTAGIARIO", "Projetos"),
     # Consultoria & Ecossistema
     ("João Ramos", "joao.ramos@startupleiria.com", "1234", "RESPONSAVEL", "Consultoria & Ecossistema"),
     ("Luis Colaço", "luis.colaco@startupleiria.com", "1234", "MEMBRO", "Consultoria & Ecossistema"),
     ("Sandra Ferreira", "apoio@startupleiria.com", "1234", "ESTAGIARIO", "Consultoria & Ecossistema"),
     ("Cláudia Figueiredo", "support@startupleiria.com", "1234", "ESTAGIARIO", "Consultoria & Ecossistema"),
+    ("Francisco Aguiar", "francisco.aguiar@startupleiria.com", "1234", "RESPONSAVEL", "Marketing", "Consultoria & Ecossistema ")
+    ("Bruno Ramalho", "bruno.ramalho@startupleiria.com", "1234", "RESPONSAVEL", "Projetos", "Consultoria & Ecossistema ")
+    ("Luís Fonseca", "luis.fonseca@startupleiria.com", "1234", "MEMBRO", "Projetos", "Consultoria & Ecossistema"),
+    ("Margarida Sousa", "margarida.sousa@startupleiria.com", "1234", "MEMBRO", "Projetos", "Consultoria & Ecossistema"),
 ]
 
 
