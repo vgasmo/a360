@@ -165,19 +165,19 @@ supabase = init_connection()
 USERS = [
     ("Vítor Ferreira", "vitor.ferreira@startupleiria.com", "1234", "CEO", "Consultoria & Ecossistema"),
     # Marketing
-    ("Francisco Aguiar", "francisco.aguiar@startupleiria.com", "1234", "RESPONSAVEL", "Marketing"),
+    ("Francisco Aguiar", "francisco.aguiar@startupleiria.com", "1234", "RESPONSAVEL", "Marketing", "Consultoria & Ecossistema")),
     ("Natacha Amorim", "natacha.amorim@startupleiria.com", "1234", "MEMBRO", "Marketing"),
     ("Mariana Reis", "mariana.reis@startupleiria.com", "1234", "MEMBRO", "Marketing"),
     ("Nicole Santos", "hello@startupleiria.com", "1234", "ESTAGIARIO", "Marketing"),
     # Administrativo
     ("Ana Coelho", "ana.coelho@startupleiria.com", "1234", "RESPONSAVEL", "Administrativo"),
     ("Paula Sequeira", "paula.sequeira@startupleiria.com", "1234", "MEMBRO", "Administrativo"),
-    ("Bruno Ramalho", "bruno.ramalho@startupleiria.com", "1234", "RESPONSAVEL", "Projetos"),
+    ("Bruno Ramalho", "bruno.ramalho@startupleiria.com", "1234", "RESPONSAVEL", "Projetos", "Consultoria & Ecossistema"),
     ("Rita Ferreira", "rita.ferreira@startupleiria.com", "1234", "MEMBRO", "Administrativo"),
     ("Bernardo Vieira", "info@startupleiria.com", "1234", "ESTAGIARIO", "Administrativo"),
     # Projetos
-    ("Luís Fonseca", "luis.fonseca@startupleiria.com", "1234", "MEMBRO", "Projetos"),
-    ("Margarida Sousa", "margarida.sousa@startupleiria.com", "1234", "MEMBRO", "Projetos"),
+    ("Luís Fonseca", "luis.fonseca@startupleiria.com", "1234", "MEMBRO", "Projetos", "Consultoria & Ecossistema"),
+    ("Margarida Sousa", "margarida.sousa@startupleiria.com", "1234", "MEMBRO", "Projetos",, "Consultoria & Ecossistema"),
     ("Luís Pacheco", "suporte@startupleiria.com", "1234", "ESTAGIARIO", "Projetos"),
     # Consultoria & Ecossistema
     ("João Ramos", "joao.ramos@startupleiria.com", "1234", "RESPONSAVEL", "Consultoria & Ecossistema"),
