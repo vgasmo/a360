@@ -629,6 +629,7 @@ def change_password_screen(user: dict):
 
 
 # ----------------- FORMULÁRIO AVALIAÇÃO -----------------
+# (O código do formulário continua igual, vou incluir completo abaixo)
 
 def evaluation_form(user: dict):
     render_header("Faça avaliações construtivas e ajude a equipa a crescer")
@@ -1458,6 +1459,9 @@ def show_ceo_by_team(df: pd.DataFrame):
     
     team_stats.columns = ["Equipa", "Média", "Desvio Padrão", "Nº Avaliações", "Nº Pessoas"]
     team_stats = team_stats.sort_values("Média", ascending=False)
+    
+    # ✅ CORREÇÃO: Preencher NaN com 0 antes de formatar
+    team_stats = team_stats.fillna(0)
 
     st.dataframe(
         team_stats.style.format({
@@ -1619,7 +1623,6 @@ def show_ceo_export(df: pd.DataFrame):
     col1, col2 = st.columns(2)
 
     with col1:
-        # CSV sempre disponível
         csv = df.to_csv(index=False).encode("utf-8")
         st.download_button(
             label="📄 Descarregar CSV",
@@ -1630,11 +1633,9 @@ def show_ceo_export(df: pd.DataFrame):
         )
 
     with col2:
-        # Excel com tratamento de erro
         try:
             from io import BytesIO
             output = BytesIO()
-            # Usar openpyxl (mais estável no Streamlit)
             with pd.ExcelWriter(output, engine="openpyxl") as writer:
                 df.to_excel(writer, index=False, sheet_name="Avaliações")
             excel_data = output.getvalue()
@@ -1647,11 +1648,107 @@ def show_ceo_export(df: pd.DataFrame):
                 use_container_width=True,
             )
         except Exception as e:
-            st.warning(f"Excel indisponível. Use CSV.")
+            st.warning("Excel indisponível. Use CSV.")
             st.caption(f"Erro: {str(e)}")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
+
+# ----------------- RESET SISTEMA (APENAS CEO) -----------------
+
+def reset_system_screen(user: dict):
+    """Permite ao CEO fazer reset completo do sistema."""
+    if user["role"] != "CEO":
+        st.error("❌ Acesso negado. Apenas o CEO pode fazer reset.")
+        return
+    
+    render_header("Reset do Sistema - Use com cuidado!")
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("### ⚠️ ZONA DE PERIGO")
+    
+    st.markdown('<div class="alert-warning">', unsafe_allow_html=True)
+    st.markdown("""
+    **Atenção:** Esta operação é irreversível!
+    
+    O reset irá **apagar permanentemente**:
+    - ✖️ Todas as avaliações registadas
+    - ✖️ Todos os rascunhos guardados
+    - ✖️ Todo o histórico de feedback
+    
+    **NÃO apaga:**
+    - ✅ Utilizadores (todos mantêm acesso)
+    - ✅ Passwords (não são alteradas)
+    """)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    try:
+        all_evals = supabase.table("evaluations").select("*").execute().data
+        all_drafts = supabase.table("evaluation_drafts").select("*").execute().data
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("📊 Avaliações a apagar", len(all_evals))
+        with col2:
+            st.metric("📝 Rascunhos a apagar", len(all_drafts))
+    except:
+        st.warning("Não foi possível carregar estatísticas.")
+
+    st.markdown("---")
+    st.markdown("### 🔐 Confirmação de Reset")
+    
+    with st.form("reset_form"):
+        st.markdown("Para confirmar o reset, digite exatamente: **`RESET COMPLETO`**")
+        
+        confirmation = st.text_input(
+            "Confirmação",
+            placeholder="RESET COMPLETO",
+            help="Digite exatamente como mostrado acima",
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            submitted = st.form_submit_button(
+                "🗑️ APAGAR TUDO",
+                use_container_width=True,
+                type="primary",
+            )
+        
+        with col2:
+            cancel = st.form_submit_button(
+                "❌ Cancelar",
+                use_container_width=True,
+            )
+        
+        if submitted:
+            if confirmation != "RESET COMPLETO":
+                st.error("❌ Confirmação incorreta. O reset foi cancelado por segurança.")
+            else:
+                try:
+                    # Apagar todas as avaliações
+                    supabase.table("evaluations").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+                    
+                    # Apagar todos os rascunhos
+                    supabase.table("evaluation_drafts").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+                    
+                    st.markdown('<div class="alert-success">', unsafe_allow_html=True)
+                    st.markdown("### ✅ Reset completo realizado!")
+                    st.markdown("""
+                    - ✅ Todas as avaliações foram apagadas
+                    - ✅ Todos os rascunhos foram apagados
+                    - ✅ Sistema pronto para novo ciclo de avaliações
+                    """)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.balloons()
+                    
+                except Exception as e:
+                    st.error(f"❌ Erro ao fazer reset: {e}")
+        
+        elif cancel:
+            st.info("Reset cancelado. Nenhuma alteração foi feita.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ----------------- MAIN -----------------
@@ -1693,7 +1790,7 @@ def main():
 
         menu_options = ["📝 Avaliar", "📊 Resultados", "🔑 Password"]
         if user["role"] == "CEO":
-            menu_options.append("🎯 Painel CEO")
+            menu_options.extend(["🎯 Painel CEO", "🔄 Reset Sistema"])
         
         choice = st.radio("**Menu**", menu_options)
 
@@ -1714,6 +1811,8 @@ def main():
         change_password_screen(user)
     elif choice == "🎯 Painel CEO":
         ceo_dashboard()
+    elif choice == "🔄 Reset Sistema":
+        reset_system_screen(user)
 
 
 if __name__ == "__main__":
