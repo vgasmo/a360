@@ -159,36 +159,56 @@ def init_connection() -> Client:
 
 supabase = init_connection()
 
-# ----------------- UTILIZADORES BASE (Startup Leiria) -----------------
-# name, email, password, role, team
+# ----------------- UTILIZADORES BASE -----------------
+# name, email, password, role, primary_team
 
 USERS = [
     ("Vítor Ferreira", "vitor.ferreira@startupleiria.com", "1234", "CEO", "Consultoria & Ecossistema"),
+
     # Marketing
-    ("Francisco Aguiar", "francisco.aguiar@startupleiria.com", "1234", "RESPONSAVEL", "Marketing", "Consultoria & Ecossistema"),
+    ("Francisco Aguiar", "francisco.aguiar@startupleiria.com", "1234", "RESPONSAVEL", "Marketing"),
     ("Natacha Amorim", "natacha.amorim@startupleiria.com", "1234", "MEMBRO", "Marketing"),
     ("Mariana Reis", "mariana.reis@startupleiria.com", "1234", "MEMBRO", "Marketing"),
     ("Nicole Santos", "hello@startupleiria.com", "1234", "ESTAGIARIO", "Marketing"),
+
     # Administrativo
     ("Ana Coelho", "ana.coelho@startupleiria.com", "1234", "RESPONSAVEL", "Administrativo"),
     ("Paula Sequeira", "paula.sequeira@startupleiria.com", "1234", "MEMBRO", "Administrativo"),
-    ("Bruno Ramalho", "bruno.ramalho@startupleiria.com", "1234", "RESPONSAVEL", "Projetos", "Consultoria & Ecossistema"),
     ("Rita Ferreira", "rita.ferreira@startupleiria.com", "1234", "MEMBRO", "Administrativo"),
     ("Bernardo Vieira", "info@startupleiria.com", "1234", "ESTAGIARIO", "Administrativo"),
+
     # Projetos
-    ("Luís Fonseca", "luis.fonseca@startupleiria.com", "1234", "MEMBRO", "Projetos", "Consultoria & Ecossistema"),
-    ("Margarida Sousa", "margarida.sousa@startupleiria.com", "1234", "MEMBRO", "Projetos", "Consultoria & Ecossistema"),
+    ("Bruno Ramalho", "bruno.ramalho@startupleiria.com", "1234", "RESPONSAVEL", "Projetos"),
+    ("Luís Fonseca", "luis.fonseca@startupleiria.com", "1234", "MEMBRO", "Projetos"),
+    ("Margarida Sousa", "margarida.sousa@startupleiria.com", "1234", "MEMBRO", "Projetos"),
     ("Luís Pacheco", "suporte@startupleiria.com", "1234", "ESTAGIARIO", "Projetos"),
-    # Consultoria & Ecossistema
+
+    # Consultoria & Ecossistema (núcleo principal)
     ("João Ramos", "joao.ramos@startupleiria.com", "1234", "RESPONSAVEL", "Consultoria & Ecossistema"),
     ("Luis Colaço", "luis.colaco@startupleiria.com", "1234", "MEMBRO", "Consultoria & Ecossistema"),
     ("Sandra Ferreira", "apoio@startupleiria.com", "1234", "ESTAGIARIO", "Consultoria & Ecossistema"),
     ("Cláudia Figueiredo", "support@startupleiria.com", "1234", "ESTAGIARIO", "Consultoria & Ecossistema"),
-    ("Francisco Aguiar", "francisco.aguiar@startupleiria.com", "1234", "RESPONSAVEL", "Marketing", "Consultoria & Ecossistema ")
-    ("Bruno Ramalho", "bruno.ramalho@startupleiria.com", "1234", "RESPONSAVEL", "Projetos", "Consultoria & Ecossistema ")
-    ("Luís Fonseca", "luis.fonseca@startupleiria.com", "1234", "MEMBRO", "Projetos", "Consultoria & Ecossistema"),
-    ("Margarida Sousa", "margarida.sousa@startupleiria.com", "1234", "MEMBRO", "Projetos", "Consultoria & Ecossistema"),
 ]
+
+# pessoas que pertencem a MAIS do que uma equipa (multi-equipa)
+EXTRA_TEAMS = {
+    # já têm equipa principal, aqui só as adicionais
+    "francisco.aguiar@startupleiria.com": ["Consultoria & Ecossistema"],
+    "bruno.ramalho@startupleiria.com": ["Consultoria & Ecossistema"],
+    "luis.fonseca@startupleiria.com": ["Consultoria & Ecossistema"],
+    "margarida.sousa@startupleiria.com": ["Consultoria & Ecossistema"],
+    # Vítor já tem Consultoria & Ecossistema como principal, por isso não precisa extra aqui
+}
+
+
+def get_user_teams(user: dict) -> set:
+    """Devolve o conjunto de equipas a que o utilizador pertence (principal + extra)."""
+    teams = set()
+    if user.get("team"):
+        teams.add(user["team"])
+    extra = EXTRA_TEAMS.get(user["email"], [])
+    teams.update(extra)
+    return teams
 
 
 def hash_pwd(password: str) -> str:
@@ -307,11 +327,10 @@ def login_screen():
 def evaluation_form(user: dict):
     render_header("Avalie colegas ou faça a sua autoavaliação, sempre com foco em desenvolvimento.")
 
-    # Buscar todos os utilizadores
     res = supabase.table("users").select("*").execute()
     all_users = res.data
 
-    evaluator_team = user.get("team")
+    evaluator_teams = get_user_teams(user)
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Configuração da avaliação")
@@ -323,19 +342,14 @@ def evaluation_form(user: dict):
     )
 
     evaluatee = None
-    evaluatee_team = None
-    same_team = False
 
     if mode.startswith("Autoavaliação"):
         evaluatee = user
-        evaluatee_team = evaluator_team
-        same_team = True  # por definição
         st.caption(
             "Está a fazer **autoavaliação**. "
             "Vai responder sobre as mesmas dimensões que os outros usarão para o avaliar."
         )
     else:
-        # Colegas = todos menos o próprio
         colleagues = [u for u in all_users if u["email"] != user["email"]]
         if not colleagues:
             st.info("Ainda não existem outros utilizadores registados.")
@@ -347,27 +361,33 @@ def evaluation_form(user: dict):
         name_clean = selected.split(" (")[0]
         evaluatee = next(c for c in colleagues if c["name"] == name_clean)
 
-        evaluatee_team = evaluatee.get("team")
-        same_team = evaluator_team and evaluatee_team and evaluator_team == evaluatee_team
-
         st.caption(
-            f"Está a avaliar **{evaluatee['name']}** (`{evaluatee['role']}`, equipa **{evaluatee_team}**)."
+            f"Está a avaliar **{evaluatee['name']}** (`{evaluatee['role']}`, equipa principal **{evaluatee['team']}**)."
         )
-        if same_team:
-            st.success(
-                f"Como ambos pertencem à equipa **{evaluator_team}**, além das competências comportamentais "
-                "vai também avaliar competências técnicas e objetivos."
-            )
-        else:
-            st.info(
-                "Como pertencem a equipas diferentes, esta avaliação incide apenas sobre "
-                "competências **comportamentais**."
-            )
 
     st.markdown('</div>', unsafe_allow_html=True)
 
     if evaluatee is None:
         return
+
+    evaluatee_teams = get_user_teams(evaluatee)
+    shared_teams = evaluator_teams.intersection(evaluatee_teams)
+    same_team = len(shared_teams) > 0
+
+    if mode.startswith("Autoavaliação"):
+        pass  # mensagem já mostrada
+    else:
+        if same_team:
+            st.success(
+                "Têm equipas em comum: **"
+                + ", ".join(sorted(shared_teams))
+                + "**. Vai poder avaliar competências técnicas e objetivos nessas equipas."
+            )
+        else:
+            st.info(
+                "Como não partilham nenhuma equipa, esta avaliação incide apenas sobre "
+                "competências **comportamentais**."
+            )
 
     answers = []
 
@@ -387,24 +407,24 @@ def evaluation_form(user: dict):
             answers.append(("Comportamentais", comp, score, comment))
             st.markdown("---")
 
-        # TÉCNICAS — só mesma equipa
-        evaluatee_team = evaluatee.get("team")
-        if same_team and evaluatee_team in TECHNICAL_COMPETENCIES:
-            st.markdown("### Competências técnicas da equipa")
-            for comp in TECHNICAL_COMPETENCIES[evaluatee_team]:
-                cols = st.columns([1, 3])
-                with cols[0]:
-                    score = st.slider(comp, 1, 5, 3, key=f"tech_{comp}")
-                with cols[1]:
-                    comment = st.text_area(
-                        f"Comentário sobre «{comp}» (opcional)",
-                        key=f"tech_comment_{comp}",
-                        height=70,
-                    )
-                answers.append(("Técnicas", comp, score, comment))
+        # TÉCNICAS — para cada equipa partilhada
+        for team in sorted(shared_teams):
+            if team in TECHNICAL_COMPETENCIES:
+                st.markdown(f"### Competências técnicas – {team}")
+                for comp in TECHNICAL_COMPETENCIES[team]:
+                    cols = st.columns([1, 3])
+                    with cols[0]:
+                        score = st.slider(comp, 1, 5, 3, key=f"tech_{team}_{comp}")
+                    with cols[1]:
+                        comment = st.text_area(
+                            f"Comentário sobre «{comp}» (opcional)",
+                            key=f"tech_comment_{team}_{comp}",
+                            height=70,
+                        )
+                    answers.append((f"Técnicas - {team}", comp, score, comment))
                 st.markdown("---")
 
-        # OBJETIVOS — só mesma equipa
+        # OBJETIVOS — se houver pelo menos uma equipa em comum
         if same_team:
             st.markdown("### Objetivos")
             for comp in OBJECTIVE_COMPETENCIES:
@@ -418,7 +438,7 @@ def evaluation_form(user: dict):
                         height=70,
                     )
                 answers.append(("Objetivos", comp, score, comment))
-                st.markdown("---")
+            st.markdown("---")
 
         submitted = st.form_submit_button("💾 Guardar avaliação", use_container_width=True)
 
@@ -426,13 +446,16 @@ def evaluation_form(user: dict):
         now_iso = datetime.utcnow().isoformat()
         evaluation_type = "SELF" if evaluatee["email"] == user["email"] else "OTHER"
 
+        evaluator_team_primary = user.get("team")
+        evaluatee_team_primary = evaluatee.get("team")
+
         for category, competency, score, comment in answers:
             supabase.table("evaluations").insert(
                 {
                     "evaluator": user["email"],
-                    "evaluator_team": evaluator_team,
+                    "evaluator_team": evaluator_team_primary,
                     "evaluatee": evaluatee["email"],
-                    "evaluatee_team": evaluatee_team,
+                    "evaluatee_team": evaluatee_team_primary,
                     "category": category,
                     "competency": competency,
                     "score": score,
@@ -458,7 +481,7 @@ def my_results(user: dict):
 
     df = pd.DataFrame(data)
 
-    # Bloco 1 – todas as avaliações (inclui auto)
+    # Todas as avaliações (inclui auto)
     grouped_all = df.groupby("category")["score"].mean().reset_index()
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -472,7 +495,7 @@ def my_results(user: dict):
             )
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Bloco 2 – só feedback dos outros (sem auto)
+    # Só feedback de outros (sem auto)
     if "evaluation_type" in df.columns:
         df_others = df[df["evaluation_type"] != "SELF"]
     else:
@@ -539,14 +562,14 @@ def ceo_dashboard():
     st.caption("Inclui autoavaliações e feedback de colegas/liderança.")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Médias por equipa
+    # Médias por equipa (equipa principal)
     avg_by_team = df.groupby("evaluatee_team")["score"].mean().reset_index()
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Média global por equipa")
+    st.subheader("Média global por equipa (equipa principal)")
     st.bar_chart(avg_by_team, x="evaluatee_team", y="score")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Sem autoavaliação
+    # Médias por pessoa sem autoavaliação
     if "evaluation_type" in df.columns:
         df_no_self = df[df["evaluation_type"] != "SELF"]
         if not df_no_self.empty:
@@ -600,7 +623,10 @@ def main():
         st.markdown("### 👤 Utilizador")
         st.markdown(f"**{user['name']}**  \n`{user['role']}`")
         if user.get("team"):
-            st.markdown(f"Equipa: **{user['team']}**")
+            st.markdown(f"Equipa principal: **{user['team']}**")
+        teams = get_user_teams(user)
+        if len(teams) > 1:
+            st.caption("Equipas em que participa: " + ", ".join(sorted(teams)))
         st.markdown("---")
         menu = ["Minhas Avaliações", "Os Meus Resultados"]
         if user["role"] == "CEO":
@@ -610,7 +636,6 @@ def main():
             st.session_state.user = None
             st.rerun()
 
-    # Conteúdo principal
     if choice == "Minhas Avaliações":
         evaluation_form(user)
     elif choice == "Os Meus Resultados":
@@ -621,4 +646,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
