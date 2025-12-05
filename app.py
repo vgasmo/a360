@@ -1,3 +1,4 @@
+# coding: utf-8
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
@@ -160,44 +161,142 @@ def init_connection() -> Client:
 supabase = init_connection()
 
 # ----------------- UTILIZADORES BASE -----------------
-# name, email, password, role, primary_team
+# agora em dicts, menos propenso a erros
 
 USERS = [
-    ("Vítor Ferreira", "vitor.ferreira@startupleiria.com", "1234", "CEO", "Consultoria & Ecossistema"),
-
+    # CEO
+    {
+        "name": "Vítor Ferreira",
+        "email": "vitor.ferreira@startupleiria.com",
+        "password": "1234",
+        "role": "CEO",
+        "team": "Consultoria & Ecossistema",
+    },
     # Marketing
-    ("Francisco Aguiar", "francisco.aguiar@startupleiria.com", "1234", "RESPONSAVEL", "Marketing"),
-    ("Natacha Amorim", "natacha.amorim@startupleiria.com", "1234", "MEMBRO", "Marketing"),
-    ("Mariana Reis", "mariana.reis@startupleiria.com", "1234", "MEMBRO", "Marketing"),
-    ("Nicole Santos", "hello@startupleiria.com", "1234", "ESTAGIARIO", "Marketing"),
-
+    {
+        "name": "Francisco Aguiar",
+        "email": "francisco.aguiar@startupleiria.com",
+        "password": "1234",
+        "role": "RESPONSAVEL",
+        "team": "Marketing",
+    },
+    {
+        "name": "Natacha Amorim",
+        "email": "natacha.amorim@startupleiria.com",
+        "password": "1234",
+        "role": "MEMBRO",
+        "team": "Marketing",
+    },
+    {
+        "name": "Mariana Reis",
+        "email": "mariana.reis@startupleiria.com",
+        "password": "1234",
+        "role": "MEMBRO",
+        "team": "Marketing",
+    },
+    {
+        "name": "Nicole Santos",
+        "email": "hello@startupleiria.com",
+        "password": "1234",
+        "role": "ESTAGIARIO",
+        "team": "Marketing",
+    },
     # Administrativo
-    ("Ana Coelho", "ana.coelho@startupleiria.com", "1234", "RESPONSAVEL", "Administrativo"),
-    ("Paula Sequeira", "paula.sequeira@startupleiria.com", "1234", "MEMBRO", "Administrativo"),
-    ("Rita Ferreira", "rita.ferreira@startupleiria.com", "1234", "MEMBRO", "Administrativo"),
-    ("Bernardo Vieira", "info@startupleiria.com", "1234", "ESTAGIARIO", "Administrativo"),
-
+    {
+        "name": "Ana Coelho",
+        "email": "ana.coelho@startupleiria.com",
+        "password": "1234",
+        "role": "RESPONSAVEL",
+        "team": "Administrativo",
+    },
+    {
+        "name": "Paula Sequeira",
+        "email": "paula.sequeira@startupleiria.com",
+        "password": "1234",
+        "role": "MEMBRO",
+        "team": "Administrativo",
+    },
+    {
+        "name": "Rita Ferreira",
+        "email": "rita.ferreira@startupleiria.com",
+        "password": "1234",
+        "role": "MEMBRO",
+        "team": "Administrativo",
+    },
+    {
+        "name": "Bernardo Vieira",
+        "email": "info@startupleiria.com",
+        "password": "1234",
+        "role": "ESTAGIARIO",
+        "team": "Administrativo",
+    },
     # Projetos
-    ("Bruno Ramalho", "bruno.ramalho@startupleiria.com", "1234", "RESPONSAVEL", "Projetos"),
-    ("Luís Fonseca", "luis.fonseca@startupleiria.com", "1234", "MEMBRO", "Projetos"),
-    ("Margarida Sousa", "margarida.sousa@startupleiria.com", "1234", "MEMBRO", "Projetos"),
-    ("Luís Pacheco", "suporte@startupleiria.com", "1234", "ESTAGIARIO", "Projetos"),
-
-    # Consultoria & Ecossistema (núcleo principal)
-    ("João Ramos", "joao.ramos@startupleiria.com", "1234", "RESPONSAVEL", "Consultoria & Ecossistema"),
-    ("Luis Colaço", "luis.colaco@startupleiria.com", "1234", "MEMBRO", "Consultoria & Ecossistema"),
-    ("Sandra Ferreira", "apoio@startupleiria.com", "1234", "ESTAGIARIO", "Consultoria & Ecossistema"),
-    ("Cláudia Figueiredo", "support@startupleiria.com", "1234", "ESTAGIARIO", "Consultoria & Ecossistema"),
+    {
+        "name": "Bruno Ramalho",
+        "email": "bruno.ramalho@startupleiria.com",
+        "password": "1234",
+        "role": "RESPONSAVEL",
+        "team": "Projetos",
+    },
+    {
+        "name": "Luís Fonseca",
+        "email": "luis.fonseca@startupleiria.com",
+        "password": "1234",
+        "role": "MEMBRO",
+        "team": "Projetos",
+    },
+    {
+        "name": "Margarida Sousa",
+        "email": "margarida.sousa@startupleiria.com",
+        "password": "1234",
+        "role": "MEMBRO",
+        "team": "Projetos",
+    },
+    {
+        "name": "Luís Pacheco",
+        "email": "suporte@startupleiria.com",
+        "password": "1234",
+        "role": "ESTAGIARIO",
+        "team": "Projetos",
+    },
+    # Consultoria & Ecossistema (núcleo)
+    {
+        "name": "João Ramos",
+        "email": "joao.ramos@startupleiria.com",
+        "password": "1234",
+        "role": "RESPONSAVEL",
+        "team": "Consultoria & Ecossistema",
+    },
+    {
+        "name": "Luis Colaço",
+        "email": "luis.colaco@startupleiria.com",
+        "password": "1234",
+        "role": "MEMBRO",
+        "team": "Consultoria & Ecossistema",
+    },
+    {
+        "name": "Sandra Ferreira",
+        "email": "apoio@startupleiria.com",
+        "password": "1234",
+        "role": "ESTAGIARIO",
+        "team": "Consultoria & Ecossistema",
+    },
+    {
+        "name": "Cláudia Figueiredo",
+        "email": "support@startupleiria.com",
+        "password": "1234",
+        "role": "ESTAGIARIO",
+        "team": "Consultoria & Ecossistema",
+    },
 ]
 
 # pessoas que pertencem a MAIS do que uma equipa (multi-equipa)
 EXTRA_TEAMS = {
-    # já têm equipa principal, aqui só as adicionais
+    "vitor.ferreira@startupleiria.com": ["Marketing", "Projetos"],  # se quiseres, podes editar
     "francisco.aguiar@startupleiria.com": ["Consultoria & Ecossistema"],
     "bruno.ramalho@startupleiria.com": ["Consultoria & Ecossistema"],
     "luis.fonseca@startupleiria.com": ["Consultoria & Ecossistema"],
     "margarida.sousa@startupleiria.com": ["Consultoria & Ecossistema"],
-    # Vítor já tem Consultoria & Ecossistema como principal, por isso não precisa extra aqui
 }
 
 
@@ -224,15 +323,15 @@ def seed_users():
         st.error(f"Erro ao aceder à tabela 'users' no Supabase: {e}")
         return
 
-    for (name, email, pwd, role, team) in USERS:
-        if email not in existing_emails:
+    for u in USERS:
+        if u["email"] not in existing_emails:
             supabase.table("users").insert(
                 {
-                    "name": name,
-                    "email": email,
-                    "password_hash": hash_pwd(pwd),
-                    "role": role,
-                    "team": team,
+                    "name": u["name"],
+                    "email": u["email"],
+                    "password_hash": hash_pwd(u["password"]),
+                    "role": u["role"],
+                    "team": u["team"],
                 }
             ).execute()
 
@@ -374,9 +473,7 @@ def evaluation_form(user: dict):
     shared_teams = evaluator_teams.intersection(evaluatee_teams)
     same_team = len(shared_teams) > 0
 
-    if mode.startswith("Autoavaliação"):
-        pass  # mensagem já mostrada
-    else:
+    if not mode.startswith("Autoavaliação"):
         if same_team:
             st.success(
                 "Têm equipas em comum: **"
@@ -618,7 +715,6 @@ def main():
 
     user = st.session_state.user
 
-    # Sidebar
     with st.sidebar:
         st.markdown("### 👤 Utilizador")
         st.markdown(f"**{user['name']}**  \n`{user['role']}`")
@@ -646,5 +742,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
