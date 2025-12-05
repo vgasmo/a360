@@ -1619,6 +1619,7 @@ def show_ceo_export(df: pd.DataFrame):
     col1, col2 = st.columns(2)
 
     with col1:
+        # CSV sempre disponível
         csv = df.to_csv(index=False).encode("utf-8")
         st.download_button(
             label="📄 Descarregar CSV",
@@ -1629,10 +1630,12 @@ def show_ceo_export(df: pd.DataFrame):
         )
 
     with col2:
+        # Excel com tratamento de erro
         try:
             from io import BytesIO
             output = BytesIO()
-            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+            # Usar openpyxl (mais estável no Streamlit)
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
                 df.to_excel(writer, index=False, sheet_name="Avaliações")
             excel_data = output.getvalue()
             
@@ -1643,10 +1646,12 @@ def show_ceo_export(df: pd.DataFrame):
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
             )
-        except:
-            st.caption("Excel indisponível")
+        except Exception as e:
+            st.warning(f"Excel indisponível. Use CSV.")
+            st.caption(f"Erro: {str(e)}")
 
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 # ----------------- MAIN -----------------
