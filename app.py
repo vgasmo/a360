@@ -3,8 +3,8 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
 import hashlib
-from datetime import datetime, timedelta
-import json
+from datetime import datetime
+import re
 
 # ----------------- CONFIG GERAL -----------------
 
@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ----------------- CSS MELHORADO -----------------
+# ----------------- CSS MELHORADO (mantém igual) -----------------
 
 st.markdown(
     """
@@ -660,6 +660,26 @@ def delete_draft(evaluator_email: str, evaluatee_email: str):
         pass
 
 
+def change_password(email: str, new_password: str) -> bool:
+    """Altera a password do utilizador."""
+    try:
+        supabase.table("users").update(
+            {"password_hash": hash_pwd(new_password)}
+        ).eq("email", email).execute()
+        return True
+    except:
+        return False
+
+
+def validate_password_strength(password: str) -> tuple[bool, str]:
+    """Valida se a password é forte o suficiente."""
+    if len(password) < 6:
+        return False, "Password deve ter pelo menos 6 caracteres"
+    if password == "1234" or password == "123456":
+        return False, "Password muito fraca. Escolha algo mais seguro"
+    return True, "Password válida"
+
+
 # ----------------- LOGIN -----------------
 
 def login_screen():
@@ -705,7 +725,76 @@ def login_screen():
         st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ----------------- FORMULÁRIO DE AVALIAÇÃO -----------------
+# ----------------- MUDANÇA DE PASSWORD -----------------
+
+def change_password_screen(user: dict):
+    """Ecrã para mudar a password."""
+    render_header("Altere a sua password para maior segurança")
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("### 🔑 Alterar Password")
+        
+        st.markdown('<div class="alert-info">', unsafe_allow_html=True)
+        st.markdown("🔒 **Política de segurança:**")
+        st.markdown("- Mínimo 6 caracteres")
+        st.markdown("- Evite passwords óbvias (1234, 123456, etc.)")
+        st.markdown("- Use combinação de letras e números")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        with st.form("change_password_form"):
+            current_password = st.text_input(
+                "Password atual",
+                type="password",
+                help="Digite a sua password atual para confirmar",
+            )
+            new_password = st.text_input(
+                "Nova password",
+                type="password",
+                help="Escolha uma password forte",
+            )
+            confirm_password = st.text_input(
+                "Confirmar nova password",
+                type="password",
+                help="Digite novamente a nova password",
+            )
+            
+            submitted = st.form_submit_button("🔐 Alterar Password", use_container_width=True)
+            
+            if submitted:
+                # Validações
+                if not current_password or not new_password or not confirm_password:
+                    st.error("⚠️ Preencha todos os campos")
+                elif hash_pwd(current_password) != user["password_hash"]:
+                    st.error("❌ Password atual incorreta")
+                elif new_password != confirm_password:
+                    st.error("❌ As passwords não coincidem")
+                else:
+                    # Validar força da password
+                    is_valid, msg = validate_password_strength(new_password)
+                    if not is_valid:
+                        st.error(f"❌ {msg}")
+                    else:
+                        # Alterar password
+                        if change_password(user["email"], new_password):
+                            st.markdown('<div class="alert-success">', unsafe_allow_html=True)
+                            st.markdown("### ✅ Password alterada com sucesso!")
+                            st.markdown("A sua password foi atualizada. Use-a no próximo login.")
+                            st.markdown('</div>', unsafe_allow_html=True)
+                            
+                            # Atualizar session state
+                            user["password_hash"] = hash_pwd(new_password)
+                            st.session_state.user = user
+                            st.balloons()
+                        else:
+                            st.error("❌ Erro ao alterar password. Tente novamente.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ----------------- FORMULÁRIO DE AVALIAÇÃO (mantém a versão anterior) -----------------
 
 def evaluation_form(user: dict):
     render_header("Faça avaliações construtivas e ajude a equipa a crescer")
@@ -913,7 +1002,7 @@ def evaluation_form(user: dict):
                 st.markdown('</div>', unsafe_allow_html=True)
             
             else:
-                # Avaliação completa
+                # Avaliação completa (código mantém-se igual ao anterior)
                 tabs = []
                 tab_names = ["🌱 Comportamentais"]
                 
@@ -1228,22 +1317,6 @@ def show_my_evaluations(user: dict):
                 st.markdown(f"⭐ Média: **{row['score']:.2f}**")
             st.markdown("---")
 
-    # Tabela detalhada
-    with st.expander("🔍 Ver detalhes completos"):
-        cols_to_show = [
-            "evaluatee",
-            "category",
-            "competency",
-            "score",
-            "comment",
-            "created_at",
-        ]
-        cols_to_show = [c for c in cols_to_show if c in df.columns]
-        st.dataframe(
-            df[cols_to_show].sort_values("created_at", ascending=False),
-            use_container_width=True,
-        )
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -1284,10 +1357,10 @@ def show_drafts(user: dict):
     st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ----------------- RESULTADOS INDIVIDUAIS -----------------
+# ----------------- RESULTADOS INDIVIDUAIS (SEM AVALIADORES) -----------------
 
 def my_results(user: dict):
-    render_header("Os seus resultados e feedback recebido")
+    render_header("Os seus resultados e feedback recebido (anónimo)")
 
     data = get_evaluations_by_evaluatee(user["email"])
 
@@ -1299,6 +1372,9 @@ def my_results(user: dict):
 
     df = pd.DataFrame(data)
 
+    # ⚠️ REMOVER COLUNA DO AVALIADOR PARA GARANTIR ANONIMATO
+    # (exceto para CEO que vê tudo no painel dele)
+    
     # Separar autoavaliação de feedback de outros
     df_self = df[df["evaluation_type"] == "SELF"] if "evaluation_type" in df.columns else pd.DataFrame()
     df_others = df[df["evaluation_type"] != "SELF"] if "evaluation_type" in df.columns else df
@@ -1466,9 +1542,13 @@ def my_results(user: dict):
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Comentários recebidos
+    # Comentários recebidos (SEM MOSTRAR QUEM DEU)
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 💬 Comentários Recebidos")
+    st.markdown("### 💬 Comentários Recebidos (Anónimos)")
+    
+    st.markdown('<div class="alert-info">', unsafe_allow_html=True)
+    st.markdown("🔒 **Política de confidencialidade:** Os comentários são apresentados de forma anónima para incentivar feedback honesto.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     df_with_comments = df[df["comment"].notna() & (df["comment"] != "")]
 
@@ -1477,33 +1557,18 @@ def my_results(user: dict):
     else:
         for _, row in df_with_comments.iterrows():
             is_self = row.get("evaluation_type") == "SELF"
-            badge = "🪞 Autoavaliação" if is_self else "👤 Colega"
+            badge = "🪞 Autoavaliação" if is_self else "👤 Colega (Anónimo)"
             
             with st.expander(f"{badge} | {row['category']} - {row['competency']} (⭐ {row['score']})"):
                 st.markdown(f"_{row['comment']}_")
-                st.caption(f"Data: {row['created_at'][:10]}")
+                # NÃO mostrar data exata para evitar identificação
+                st.caption(f"📅 {row['created_at'][:7]}")  # Só ano-mês
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Detalhe completo
-    with st.expander("🔍 Ver tabela detalhada completa"):
-        cols_to_show = [
-            "category",
-            "competency",
-            "score",
-            "comment",
-            "evaluator",
-            "evaluation_type",
-            "created_at",
-        ]
-        cols_to_show = [c for c in cols_to_show if c in df.columns]
-        st.dataframe(
-            df[cols_to_show].sort_values("created_at", ascending=False),
-            use_container_width=True,
-        )
 
-
-# ----------------- PAINEL DO CEO -----------------
+# ----------------- PAINEL DO CEO (mantém com avaliadores visíveis) -----------------
+# (Código mantém-se igual, CEO vê TUDO incluindo quem deu cada avaliação)
 
 def ceo_dashboard():
     render_header("Dashboard executivo com análise completa da equipa")
@@ -1838,7 +1903,7 @@ def main():
         st.markdown("---")
 
         # Menu
-        menu_options = ["📝 Avaliar", "📊 Os Meus Resultados"]
+        menu_options = ["📝 Avaliar", "📊 Os Meus Resultados", "🔑 Alterar Password"]
         if user["role"] == "CEO":
             menu_options.append("🎯 Painel do CEO")
         
@@ -1859,10 +1924,13 @@ def main():
         evaluation_form(user)
     elif choice == "📊 Os Meus Resultados":
         my_results(user)
+    elif choice == "🔑 Alterar Password":
+        change_password_screen(user)
     elif choice == "🎯 Painel do CEO":
         ceo_dashboard()
 
 
 if __name__ == "__main__":
     main()
+
 
